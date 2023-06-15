@@ -1,0 +1,13 @@
+TestReports/
+.git
+.idea
+.vscode
+.env
+.html
+
+step_defs/__pycache__/
+__pycache__/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
