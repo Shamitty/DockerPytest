@@ -1,5 +1,5 @@
 {
-  "browser": "Remote",
-  "headless": true,
-  "implicit_wait": 10
+  "browser_config_name": "Remote",
+  "implicit_wait": 10,
+  "localization": false
 }

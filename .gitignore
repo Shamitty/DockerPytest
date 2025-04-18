@@ -8,6 +8,12 @@ TestReports/
 step_defs/__pycache__/
 __pycache__/
 
+#Ignore venv
+venv/**
+
+#Ignore Report
+reports/**
+
 # Build results
 [Dd]ebug/
 [Rr]elease/

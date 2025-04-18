@@ -1,4 +1,4 @@
-# Python-MachineBook
+# Python-DockerPytest
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ py -m ensurepip --upgrade
 
 ## Steps to Run your First Test
 
-Step 1. Clone the MachineBook Selenium Repository.
+Step 1. Clone the DockerPytest Selenium Repository.
 
 ```
 git clone https://github.com/Shamitty/DockerPytest.git
@@ -31,8 +31,21 @@ pip install -r requirements.txt
 
 Step 4. Running tests via docker, docker-compose, or command line
 
+#### Running with local vs code 
+```
+pytest step_defs/test_fglife_landing_page_steps.py --disable-warnings --html=reports/dockerpytest.html -k Regression
+
+Add -v -f for it to run automatically after a change
+
+
+
+```
+
 ##### Running with docker-compose
 
 ```
-docker-compose -f docker-compose.test.yml run --rm machinebook_regression
+docker-compose -f docker-compose.test.yml run -e TAGNAME=Regression --rm dockerpytest_regression && docker-compose rm -fsv
+
+TAGNAME="@Regression or @Smoke" docker-compose --no-cache -f docker-compose.yml run --rm dockerpytest_regression && docker-compose rm -fsv
+TAGNAME="@Regression or @Smoke" docker-compose --no-cache -f docker-compose.yml run --rm dockerpytest_regression
 ```

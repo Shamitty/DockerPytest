@@ -1,72 +1,99 @@
 import pytest
-import selenium.webdriver
 import json
+import requests
 from selenium import webdriver
-from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.edge.service import Service as EdgeService
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
-from pytest_bdd import given, then, parsers
-from pages.base import BasePage
-import urllib3
-import backoff
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 
-#@backoff.on_exception(
-   # backoff.expo,
-   # urllib3.exceptions.MaxRetryError,
-  #  jitter=backoff.full_jitter,
- #   max_time=600
-#)
-
-#def pytest_addoption(parser):
-#    parser.addoption("--browser", action="store")
-
-@pytest.fixture()
-def config(request, scope='session'):
+def open_config():
 
     # Read config file
     with open('config.json') as config_file:
         config = json.load(config_file)
     return config
 
+def get_available_browsers():
+    response = requests.get("http://localhost:4444/grid/api/hub")
+    data = response.json()
+    browsers = []
+    for node in data['nodes']:
+        for capability in node['capabilities']:
+            browsers.append(capability['browserName'])
+    return set(browsers)
 
-@pytest.fixture()
-def browser(config):
-
-    # Initialize the WebDriver instance
-    if config['browser'] == 'Remote':
-        opts = webdriver.ChromeOptions()
-        if config['headless']:
-            opts.add_argument('headless')
-            b = webdriver.Remote(
-                command_executor='http://selenium-hub:4444/wd/hub',
-                options=opts
-            )
-    elif config['browser'] == 'Chrome':
-        opts = webdriver.ChromeOptions()
-        if config['headless']:
-            print("should be headless. Need to uncomment")
-            opts.add_argument('headless')
-            opts.add_argument('no-sandbox')    
-        b = webdriver.Chrome(options=opts)
-    elif config['browser'] == 'Firefox':
-        opts = webdriver.FirefoxOptions()
-        if config['headless']:
-            opts.headless = True
-        b = webdriver.Firefox(
-            executable_path=GeckoDriverManager().install(), options=opts)
+def get_localization_execution(config):
+    json_config = config['localization']
+    if json_config:
+        return "localhost"
     else:
-        raise Exception(f'Browser "{config["browser"]}" is not supported')
+        return "selenium-hub"
 
-    # Make call wait up to 10 seconds for elements to appear
-    b.implicitly_wait(config['implicit_wait'])
-    b.maximize_window()
-    # Return the WebDriver instance for the setup
-    yield b
+@pytest.fixture(params=["chrome", "firefox", "edge"])
+def browser(request):
+    browser_name = request.param
+    json_config = open_config()
+    browser_config_name = json_config['browser_config_name']
+    execution_url = get_localization_execution(json_config)
+    
+    if browser_config_name == "Remote":
+        if browser_name == "chrome":
+            options = webdriver.ChromeOptions()
+            options.add_argument('--headless')  # Run in headless mode if required
+            options.add_argument('--no-sandbox')
+            driver = webdriver.Remote(
+                command_executor=f"http://{execution_url}:4444/wd/hub",
+                options=options
+            )
+        elif browser_name == "firefox":
+            options = webdriver.FirefoxOptions()
+            options.headless = True  # Enable headless mode
+            driver = webdriver.Remote(
+                command_executor=f"http://{execution_url}:4444/wd/hub",
+                options=options
+            )
+        elif browser_name == "edge":
+            options = webdriver.EdgeOptions()
+            driver = webdriver.Remote(
+                command_executor=f"http://{execution_url}:4444/wd/hub",
+                options=options
+            )
 
-    # Quit the WebDriver instance for the teardown
-    b.quit()
+    elif browser_config_name == "Local":      
+    # Configure browser-specific options
+        if browser_name == "chrome":
+            options = webdriver.ChromeOptions()
+            # options.add_argument('--headless')  # Run in headless mode if required
+            options.add_argument('--no-sandbox')
+            driver = webdriver.Chrome(
+                service=ChromeService(ChromeDriverManager().install()), options=options
+            )
+        elif browser_name == "firefox":
+            options = webdriver.FirefoxOptions()
+            options.add_argument('--no-sandbox')
+            # options.headless = True  # Enable headless mode
+            driver = webdriver.Firefox(
+                service=FirefoxService(GeckoDriverManager().install()), options=options
+            )
+        elif browser_name == "edge":
+            options = webdriver.EdgeOptions()
+            driver = webdriver.Edge(
+                service=EdgeService(EdgeChromiumDriverManager().install()), options=options
+            )
+        else:
+            raise ValueError(f"Unsupported browser: {browser_name}")
+    else:
+        raise ValueError(f"Unsupported browser: {browser_name}")
 
+    # Configure implicit wait and maximize window
+    driver.implicitly_wait(10)
+    driver.maximize_window()
+    yield driver
 
-
-
+    # Quit the browser after the test
+    driver.quit()
+    
