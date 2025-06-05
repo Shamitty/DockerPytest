@@ -2,7 +2,7 @@ services:
   dockerpytest_regression:      
     build:
       context: .
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
     command: > 
       /bin/bash -c "sleep 5 && echo 'Sleep succeeded' && python -m pytest step_defs/test_fglife_landing_page_steps.py -n 6 -m '${TAGNAME}' --html=reports/test_report.html --self-contained-html"
     depends_on:
@@ -20,7 +20,6 @@ services:
 
   chrome:
     container_name: 'selenium_chrome'      
-    # image: selenium/node-chrome:4.1.4-20220427
     image: selenium/node-chrome
     shm_size: 2gb
     depends_on:
@@ -32,7 +31,6 @@ services:
       - SE_NODE_MAX_SESSIONS=5
 
   edge:
-    # image: selenium/node-edge:4.1.4-20220427
     image: selenium/node-edge
     shm_size: 2gb
     depends_on:
@@ -45,7 +43,6 @@ services:
 
 
   firefox:
-    # image: selenium/node-firefox:4.1.4-20220427
     image: selenium/node-firefox
     shm_size: 2gb
     depends_on:
